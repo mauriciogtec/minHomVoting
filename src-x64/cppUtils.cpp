@@ -49,20 +49,27 @@ IntegerMatrix adj_to_inc_reduced(IntegerMatrix adj) {
   for (int i=0; i<m; i++) {
     v_names[i] = i + 1;
   }
-  int n = m * (m - 1) / 2;
+  int n = 0;
+  for (int i = 0; i < m - 1; i++) {
+    for (int j = i + 1; j < m; j++) {
+      if (adj(i, j) == 1) {
+        n++;
+      }
+    }
+  }
   CharacterVector e_names(n);
   IntegerMatrix inc(m, n);
   int e_count = 0;
   for (int i = 0; i < m - 1; i++) {
     for (int j = i + 1; j < m; j++) {
-      stringstream e;
-      e << i + 1 << "_" << j + 1;
-      e_names[e_count] = e.str();
       if (adj(i, j) == 1) {
+        stringstream e;
+        e << i + 1 << "_" << j + 1;
+        e_names[e_count] = e.str();
         inc(i, e_count) = 1;
         inc(j, e_count) = -1;
+        e_count++;
       }
-      e_count++;
     }
   }
   inc.attr("dimnames") = List::create(v_names, e_names);

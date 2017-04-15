@@ -5,6 +5,17 @@
 
 using namespace Rcpp;
 
+// find_edges
+IntegerMatrix find_edges(IntegerMatrix adj);
+RcppExport SEXP minHomVoting_find_edges(SEXP adjSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerMatrix >::type adj(adjSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_edges(adj));
+    return rcpp_result_gen;
+END_RCPP
+}
 // adj_to_inc
 IntegerMatrix adj_to_inc(IntegerMatrix adj);
 RcppExport SEXP minHomVoting_adj_to_inc(SEXP adjSEXP) {
@@ -13,17 +24,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< IntegerMatrix >::type adj(adjSEXP);
     rcpp_result_gen = Rcpp::wrap(adj_to_inc(adj));
-    return rcpp_result_gen;
-END_RCPP
-}
-// adj_to_inc_reduced
-IntegerMatrix adj_to_inc_reduced(IntegerMatrix adj);
-RcppExport SEXP minHomVoting_adj_to_inc_reduced(SEXP adjSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< IntegerMatrix >::type adj(adjSEXP);
-    rcpp_result_gen = Rcpp::wrap(adj_to_inc_reduced(adj));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -20,19 +20,10 @@ gen_nodes <- function(d) {
   )
 }
 
-#' @title initial incidence matrix
-#' @description receives roll call data and creates an incidence matrix
-#' @details the incidence matrix \code{E} has entry \code{e_{ij}} equal to
-#' \itemize{
-#'     \code{1} if an edge starts in node \code{i} and finishes in \code{j}
-#'     \code{-1} if an edge ends in node \code{i} and finishes in \code{j}
-#'     \code{0} if nodes \code{i} and \code{j} are not connected
-#' }
-#' this matrix creates an incidence matrix from roll call data that has perfect prediction
+#' @title initial adj matrix
+#' @description receives roll call data and creates an adj matrix
+#' this matrix creates an adjacency matrix from roll call data that has perfect prediction
 #' but usually has the highest possible dimension.
-#' @examples
-#' data(onedim_voting)
-#' create_incidence_matrix(onedim_voting)
 #' @export
 gen_adj_matrix <- function(d) {
   nodes <- gen_nodes(d)

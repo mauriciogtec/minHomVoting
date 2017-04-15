@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{adj_to_inc}
 \alias{adj_to_inc}
-\title{incidence matrix from adjacency matrix in full form}
+\title{incidence matrix from adjacency matrix in reduced form}
 \usage{
 adj_to_inc(adj)
 }
@@ -14,4 +14,12 @@ an incidence matrix
 }
 \description{
 takes an adjacency matrix and generates the incidencematrix
+}
+\details{
+the incidence matrix \code{E} has entry \code{e_{ij}} equal to
+\itemize{
+    \code{1} if an edge starts in node \code{i} and finishes in \code{j}
+    \code{-1} if an edge ends in node \code{i} and finishes in \code{j}
+    \code{0} if nodes \code{i} and \code{j} are not connected
+}
 }
