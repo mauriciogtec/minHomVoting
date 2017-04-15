@@ -60,7 +60,7 @@ gen_adj_matrix <- function(d) {
 input_roll_call <- function(d) {
   nodes <- gen_nodes(d)
   adj_mat <- gen_adj_matrix(d)
-  li <- c(nodes, list(adj_mat = adj_mat))
+  li <- c(nodes, list(votes = d, adj_mat = adj_mat))
   class(li) <- "roll_call"
   li
 }
@@ -73,4 +73,73 @@ input_roll_call <- function(d) {
 compute_homology_rank <- function(roll_call) {
   inc <- adj_to_inc(roll_call$adj_mat)
   nullity <- ncol(inc) - Matrix::rankMatrix(inc)
+  as.integer(nullity)
+}
+
+#' @title plot roll call graph
+#' @description  plot roll call graph
+#' @param roll_call a list of class roll call, assumed to be generated using input_roll_call
+#' @export
+plot.roll_call <- function(roll_call) {
+  g <- igraph::graph_from_adjacency_matrix(roll_call$adj_mat)
+  plot(g, edge.arrow.size = 0)
+}
+
+#' @title predict roll call predict
+#' @description  predict call graph
+#' @param roll_call a list of class roll call, assumed to be generated using input_roll_call
+#' @return data frame of predictions
+#' @export
+predict.roll_call <- function(roll_call) {
+  g <- igraph::graph_from_adjacency_matrix(roll_call$adj_mat)
+  dists <- igraph::distances(g)
+  pred <- data.frame(
+    row.names = roll_call$label[roll_call$voter]
+  )
+  for (j in seq_along(roll_call$y)) {
+    new_col <- apply(dists[roll_call$voter, c(roll_call$y[j], roll_call$n[j])], 1, which.min)
+    new_col <- as.integer(new_col == 1)
+    pred[names(roll_call$votes)[j]] <- new_col
+  }
+  pred
+}
+
+#' @title accuracy roll call predict
+#' @description  accuracy call graph
+#' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
+#' @return data frame of accuracy
+#' @export
+accuracy <- function(roll_call) {
+  pred <- predict(roll_call)
+  correct <- pred == roll_call$votes
+  sum(correct) / length(correct)
+}
+
+#' @title mutate
+#' @description  mutate
+#' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
+#' @param p probability/frequency of mutation
+#' @return mutated roll call
+#' @export
+mutate_roll_call <- function(roll_call, p = 0.05) {
+  roll_call_copy <- roll_call
+  change_mat <- matrix(
+    sample(0:1, length(roll_call$adj_mat), c(1-p, p), replace = TRUE),
+    nrow = nrow(roll_call$adj_mat)
+  )
+  change_mat <-  change_mat + t(change_mat)
+  roll_call_copy$adj_mat <- (roll_call$adj_mat + change_mat) %% 2
+  roll_call_copy
+}
+
+#' @title combine_roll_call
+#' @description  combine_roll_call
+#' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
+#' @param p probability/frequency of mutation
+#' @return combine_roll_call
+#' @export
+combine_roll_call <- function(roll_call1, roll_call2) {
+  new_roll_call <- roll_call1
+  new_roll_call$adj_mat <- roll_call1$adj_mat * roll_call2$adj_mat
+  new_roll_call
 }
