@@ -13,8 +13,8 @@ input_roll_call(d)
 \itemize{
     \item \code{nodes} names of all the nodes
     \item \code{voter} the indexes of voters in \code{nodes}
-    \item \code{Y} the indexes of voters in \code{nodes}
-    \item \code{N} the indexes of voters in \code{nodes}
+    \item \code{Y} the indexes of 'yes' nodes for each issue in \code{nodes}
+    \item \code{N} the indexes of 'no' nodes for each in \code{nodes}
 }
 }
 \description{
