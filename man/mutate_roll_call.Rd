@@ -4,7 +4,7 @@
 \alias{mutate_roll_call}
 \title{mutate}
 \usage{
-mutate_roll_call(roll_call, p = 0.05)
+mutate_roll_call(roll_call, rate = 1)
 }
 \arguments{
 \item{roll_call}{a list of class roll call, assumed to bea generated using input_roll_call}

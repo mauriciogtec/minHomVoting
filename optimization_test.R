@@ -59,13 +59,15 @@ plot(popl[[which.min(hr)]])
 
 
 
+data(onedim_voting)
+father <- input_roll_call(twodim_voting)
 
-popl_size <- 50
-n_gen <- 30
+popl_size <- 25
+n_gen <- 500
 mutation_size <- 2
-crossover_size <- 1
+mutation_rate <- 4
+crossover_size <- 2
 crossover_rate <- 0.5
-mutation_rate <- 2
 popl <- vector("list", popl_size)
 max_attempts <- 10
 min_accuracy <- 1
@@ -81,13 +83,18 @@ for (k in 1:n_gen) {
   idx <- sample.int(popl_size, lambda, replace = TRUE)
   for (i in 1:lambda) {
     survived <- FALSE
-    attempts <- 0
+    attempts <- 1
     while (attempts < max_attempts && !survived) {
       x <- mutate_roll_call(popl[[idx[i]]], mutation_rate)
-      if (compute_accuracy(x) >= min_accuracy) {
+      accuracy <- compute_accuracy(x)
+      if (accuracy >= min_accuracy) {
         mutation_popl <- c(mutation_popl, list(x))
         survived <- TRUE
       }
+      attempts <- attempts + 1
+    }
+    if (!survived) {
+      mutation_popl <- c(mutation_popl, list(popl[[idx[i]]]))
     }
   }
   # crossover
@@ -110,7 +117,11 @@ for (k in 1:n_gen) {
         survived <- TRUE
       }
     }
+    if (!survived) {
+      mutation_popl <- c(mutation_popl, list(popl[[idx[i]]]))
+    }
   }
+
   # selection
   full_popl <- c(popl, mutation_popl, crossover_popl)
   hr <- sapply(full_popl, compute_homology_rank)
@@ -119,6 +130,32 @@ for (k in 1:n_gen) {
   print(hr[best])
   if (min(hr) == 0) break
 }
-hist(hr)
+hr <- sapply(popl, compute_homology_rank)
+best <- order(hr)[1:popl_size]
 summary(hr)
-plot(popl[[which.min(hr)]])
+plot(popl[[best[1]]])
+
+
+# Compare to classical mds
+distmat <- matrix(0, nrow = nrow(twodim_voting), ncol = nrow(twodim_voting))
+for (i in 1:(nrow(distmat) - 1)) {
+  for (j in i:nrow(distmat)) {
+    distmat[i, j] <- distmat[j, i] <- sum(twodim_voting[i, ] != twodim_voting[j, ])
+  }
+}
+res <- cmdscale(distmat, k = 2)
+plot(res)
+text(res, label = row.names(twodim_voting))
+
+
+# Larger data
+library(minHomVoting)
+library(metodosMultivariados2017)
+data("senado_votacion")
+d <- senado_votacion[ ,-(1:3)]
+d[is.na(d)] <- 0
+d[d == -1] <- 0
+father <- input_roll_call(d)
+
+
+

@@ -180,11 +180,11 @@ crossover_roll_call <- function(roll_call1, roll_call2, type = c("join", "inters
 #' @title optimise graph with min homology
 #' @description  optimise
 #' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
-#' @param population_size
-#' @param n_generations
-#' @param survival_rate
-#' @param mutation_tate
-#' @param max_time
+#' @param population_size xx
+#' @param n_generations xx
+#' @param survival_rate xx
+#' @param mutation_tate xx
+#' @param max_time xx
 #' @return optimized graph
 #' @export
 min_hom <- function(roll_call,
@@ -193,9 +193,8 @@ min_hom <- function(roll_call,
                     survival_rate = 0.75,
                     mutation_rate = 0.05,
                     max_time = 300) {
-
+  init_popl <- 500
+  n_gen <- 100
+  survival <- 0.75
+  mutation <- 0.05
 }
-init_popl <- 500
-n_gen <- 100
-survival <- 0.75
-mutation <- 0.05
