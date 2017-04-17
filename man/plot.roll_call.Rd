@@ -4,7 +4,7 @@
 \alias{plot.roll_call}
 \title{plot roll call graph}
 \usage{
-\method{plot}{roll_call}(roll_call)
+\method{plot}{roll_call}(roll_call, method = c("networkD3", "igraph"), ...)
 }
 \arguments{
 \item{roll_call}{a list of class roll call, assumed to be generated using input_roll_call}

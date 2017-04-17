@@ -20,6 +20,8 @@ gen_nodes <- function(d) {
   )
 }
 
+
+
 #' @title initial adj matrix
 #' @description receives roll call data and creates an adj matrix
 #' this matrix creates an adjacency matrix from roll call data that has perfect prediction
@@ -37,9 +39,7 @@ gen_adj_matrix <- function(d) {
   for (i in 1:nrow(d)) {
     votes_yes <- as.logical(d[i, ])
     adj_mat[i, nodes$y[votes_yes]] <- 1
-    adj_mat[nodes$y[votes_yes], i] <- 1
     adj_mat[i, nodes$n[!votes_yes]] <- 1
-    adj_mat[nodes$n[!votes_yes], i] <- 1
   }
   adj_mat
 }
@@ -80,9 +80,30 @@ compute_homology_rank <- function(roll_call) {
 #' @description  plot roll call graph
 #' @param roll_call a list of class roll call, assumed to be generated using input_roll_call
 #' @export
-plot.roll_call <- function(roll_call) {
+plot.roll_call <- function(roll_call,
+                           method = c("networkD3", "igraph"),
+                           ...) {
   g <- igraph::graph_from_adjacency_matrix(roll_call$adj_mat)
-  plot(g, edge.arrow.size = 0)
+  method <- method[1]
+  if (method == "igraph") {
+    plot(g, edge.arrow.size = 0)
+  }
+  if (method == "networkD3") {
+    n <- length(roll_call$label)
+    group <- integer(n)
+    node_colour <- character(n)
+    group[roll_call$voter] <- "voter"
+    group[roll_call$y] <- "y"
+    group[roll_call$n] <- "n"
+    colour_scale <- htmlwidgets::JS("d3.scaleOrdinal().domain(['voter', 'y', 'n']).range(['blue', 'green', 'red']);")
+    radius_calculation = htmlwidgets::JS(" Math.sqrt(d.nodesize)+20")
+    gd3 <- networkD3::igraph_to_networkD3(g, group = group)
+    networkD3::forceNetwork(Links = gd3$links, Nodes = gd3$nodes,
+                 Source = 'source', Target = 'target',
+                 NodeID = 'name', Group = 'group', opacity = 0.7,
+                 fontSize = 20, colourScale = colour_scale,
+                 bounded = TRUE, opacityNoHover = FALSE)
+  }
 }
 
 #' @title predict roll call predict
@@ -91,16 +112,9 @@ plot.roll_call <- function(roll_call) {
 #' @return data frame of predictions
 #' @export
 predict.roll_call <- function(roll_call) {
-  g <- igraph::graph_from_adjacency_matrix(roll_call$adj_mat)
-  dists <- igraph::distances(g)
-  pred <- data.frame(
-    row.names = roll_call$label[roll_call$voter]
-  )
-  for (j in seq_along(roll_call$y)) {
-    new_col <- apply(dists[roll_call$voter, c(roll_call$y[j], roll_call$n[j])], 1, which.min)
-    new_col <- as.integer(new_col == 1)
-    pred[names(roll_call$votes)[j]] <- new_col
-  }
+  g <- igraph::graph_from_adjacency_matrix(roll_call$adj_mat, "upper")
+  dists <- igraph::distances(g, v = roll_call$voter, to = c(roll_call$y, roll_call$n))
+  pred <- dists[ ,seq_along(roll_call$y)] / dists[ ,-seq_along(roll_call$y)] <= 1
   pred
 }
 
@@ -109,10 +123,10 @@ predict.roll_call <- function(roll_call) {
 #' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
 #' @return data frame of accuracy
 #' @export
-accuracy <- function(roll_call) {
+compute_accuracy <- function(roll_call) {
   pred <- predict(roll_call)
   correct <- pred == roll_call$votes
-  sum(correct) / length(correct)
+  sum(correct, na.rm = TRUE) / length(correct)
 }
 
 #' @title mutate
@@ -121,25 +135,67 @@ accuracy <- function(roll_call) {
 #' @param p probability/frequency of mutation
 #' @return mutated roll call
 #' @export
-mutate_roll_call <- function(roll_call, p = 0.05) {
+# mutate_roll_call <- function(roll_call, p = 0.05) {
+#   roll_call_copy <- roll_call
+#   change_mat <- matrix(
+#     sample(0:1, length(roll_call$adj_mat), c(1-p, p), replace = TRUE),
+#     nrow = nrow(roll_call$adj_mat)
+#   )
+#   change_mat <-  (change_mat + t(change_mat)) %% 2
+#   roll_call_copy$adj_mat <- (roll_call$adj_mat + change_mat) %% 2
+#   roll_call_copy
+# }
+mutate_roll_call <- function(roll_call, rate = 1) {
   roll_call_copy <- roll_call
-  change_mat <- matrix(
-    sample(0:1, length(roll_call$adj_mat), c(1-p, p), replace = TRUE),
-    nrow = nrow(roll_call$adj_mat)
-  )
-  change_mat <-  change_mat + t(change_mat)
-  roll_call_copy$adj_mat <- (roll_call$adj_mat + change_mat) %% 2
+  n <- length(roll_call$label)
+  n_mutations <- 1 + rgeom(1, prob = 1 / (1 + rate - 1))
+  idx <- sample.int(n * (n - 1) / 2, n_mutations)
+  x <- roll_call_copy$adj_mat[upper.tri(roll_call_copy$adj_mat)][idx]
+  roll_call_copy$adj_mat[upper.tri(roll_call_copy$adj_mat)][idx] <- (x - 1) %% 2
   roll_call_copy
 }
 
-#' @title combine_roll_call
-#' @description  combine_roll_call
+#' @title crossover_roll_call
+#' @description  crossover_roll_call
 #' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
 #' @param p probability/frequency of mutation
-#' @return combine_roll_call
+#' @return crossover_roll_call
 #' @export
-combine_roll_call <- function(roll_call1, roll_call2) {
+crossover_roll_call <- function(roll_call1, roll_call2, type = c("join", "intersect", "pool"), pool_rate = 0.25) {
   new_roll_call <- roll_call1
-  new_roll_call$adj_mat <- roll_call1$adj_mat * roll_call2$adj_mat
+  type <-  sample(type, 1)
+  if (type == "join") {
+    new_roll_call$adj_mat <- as.integer(roll_call1$adj_mat + roll_call2$adj_mat > 1)
+  }
+  if (type == "intersect") {
+    new_roll_call$adj_mat <- roll_call1$adj_mat * roll_call2$adj_mat
+  }
+  if (type == "pool") {
+    s <- rbinom(length(roll_call1$label), 1, pool_rate)
+    new_roll_call$adj_mat[ ,as.logical(s)] <- roll_call2$adj_mat[  ,as.logical(s)]
+  }
   new_roll_call
 }
+
+#' @title optimise graph with min homology
+#' @description  optimise
+#' @param roll_call a list of class roll call, assumed to bea generated using input_roll_call
+#' @param population_size
+#' @param n_generations
+#' @param survival_rate
+#' @param mutation_tate
+#' @param max_time
+#' @return optimized graph
+#' @export
+min_hom <- function(roll_call,
+                    population_size = 250,
+                    n_generations = 50,
+                    survival_rate = 0.75,
+                    mutation_rate = 0.05,
+                    max_time = 300) {
+
+}
+init_popl <- 500
+n_gen <- 100
+survival <- 0.75
+mutation <- 0.05
